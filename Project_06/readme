@@ -1,16 +1,122 @@
 
 # AIFFEL Campus Online 4th Code Peer Review Templete
-
+- 코더 : 김용석
+- 리뷰어 : 소용현
 
 
 # PRT(PeerReviewTemplate)
 각 항목을 스스로 확인하고 토의하여 작성한 코드에 적용합니다.
-- [o] 1.코드가 정상적으로 동작하고 주어진 문제를 해결했나요?
-- [o] 2.주석을 보고 작성자의 코드가 이해되었나요?
-- [x] 3.코드가 에러를 유발할 가능성이 있나요?
-- [o] 4.코드 작성자가 코드를 제대로 이해하고 작성했나요?
-- [o] 5.코드가 간결한가요?
+- [x] 1.코드가 정상적으로 동작하고 주어진 문제를 해결했나요?
+  데이터 증강 후 모델 구현 중에 있습니다.
 
+- [o] 2.주석을 보고 작성자의 코드가 이해되었나요?
+```
+# 원래의 말뭉치('src_corpus'와 'tgt_corpus')를 받아서, 이를 'lexical substitution' 기법인 'lexical_sub' 함수를 
+# 사용해 데이터 증강(data augmentation)을 수행하고, 증강된 말뭉치('new_src_corpus'와 'new_tgt_corpus')를 반환
+
+
+from tqdm import tqdm_notebook
+
+def augment_corpus(src_corpus, tgt_corpus, wv):
+    new_src_corpus = []  # 증강된 문장들을 담을 새로운 말뭉치를 빈 리스트로 초기화
+    new_tgt_corpus = []  # 증강된 문장들을 담을 새로운 말뭉치를 빈 리스트로 초기화
+    corpus_size = len(src_corpus)
+    
+    for i in tqdm_notebook(range(corpus_size)):  
+        # 'tqdm_notebook'을 사용해 전체 말뭉치 크기('corpus_size')만큼 반복문을 돌며, 
+        # 각 문장에 대해 데이터 증강을 수행, 시각적으로 보여주는데 도움이 됨.
+        
+        old_src = src_corpus[i]
+        old_tgt = tgt_corpus[i]
+        # 현재 인덱스(i)에 해당하는 원래의 소스 문장('old_src')과 타겟 문장('old_tgt')를 가져온다. 
+
+        new_src = lexical_sub(old_src, wv)
+        new_tgt = lexical_sub(old_tgt, wv)
+        # 원래의 소스문장과 타겟문장을 'lexical_sub' 함수에 적용해 증강된 문장(new_src와 new_tgt)을 생성
+
+        if new_src: 
+            new_src_corpus.append(new_src)
+            new_tgt_corpus.append(old_tgt)
+            
+        if new_tgt: 
+            new_src_corpus.append(old_src)
+            new_tgt_corpus.append(new_tgt)
+        #  증강된 소스 문장(new_src)나 타겟 문장(new_tgt)이 None이 아니라면 (즉, 증강이 성공적으로 이루어졌다면), 
+        # 이를 새로운 말뭉치(new_src_corpus와 new_tgt_corpus)에 추가
+        # 소스 문장이 증가되었을 경우, 원래의 타겟 문장을, 타겟 문장이 증강되었을 경우 원래의 소스 문장을 쌍으로 유지    
+
+    # print(new_corpus[:10])
+    return new_src_corpus, new_tgt_corpus
+    # 증강된 소스 말충치와 타겟 말뭉치를 반환
+```
+상세한 주석으로 설명되어 있습니다.
+- [x] 3.코드가 에러를 유발할 가능성이 있나요?
+```
+# 입력된 문장('sentence')의 임의의 단어를 해당 단어와 가장 유사한 단어로 바꾸는 
+# "lexical substitution(어휘 대체)" 작업을 수행하는 함수
+# 이 수행은 데이터 증강(data augmentation)의 한 방법으로, 텍스트를 다양하게 만들어 
+# 모델의 일반화 성능을 향상시키는 데 도움이 됨.
+
+def lexical_sub(sentence, word2vec):
+    import random
+
+    res = ""  # 결과가 저장
+    toks = sentence.split()  # 입력된 문장을 공백을 기준으로 나눠 각 단어를 'toks'라는 리스트에 저장
+
+    try:  
+        _from = random.choice(toks)
+        _to = word2vec.most_similar(_from)[0][0]
+        # 이 부분에서는 'toks'에서 임의의 단어를 선택하여 그 단어와 가장 유사한 단어를 찾는 역할 
+        # 없으면 'None'을 반환하고 함수를 종료
+        
+    except:   # 단어장에 없는 단어
+        return None
+
+    for tok in toks:
+        if tok is _from: res += _to + " "
+        else: res += tok + " "
+        # 각 단어에 대해 반본 작업을 수행, 현재 단어가 선택된 단어와 같다면, 
+        # 단어를 가장 유사한 단어로 바꿔 'res'에 추가 
+        # 현재 단어가 선택된 단어와 다르면, 원래 단어를 'res'를 반환
+            
+    return res
+    # 마지막으로 수정된 문장 'res'를 반환
+```
+예외처리 구문을 사용하여 구현하였습니다.
+- [o] 4.코드 작성자가 코드를 제대로 이해하고 작성했나요?
+인터뷰를 통해 확인하였습니다.
+- [o] 5.코드가 간결한가요?
+```
+## 토큰화와 패딩 작업을 수행 → 자연어 문장을 모델이 이해하고 처리할 수 있는 형태로 변환 
+
+from konlpy.tag import Mecab                                          
+
+
+def tokenize(corpus, vocab_size=50000):
+    mecab = Mecab() # Mecab, 한국어 형태소 분석기         
+    morph = [" ".join(mecab.morphs(sen)) for sen in corpus] 
+    # Mecab의 'morphs' 메소드를 사용해 형태소 분석 수행 그 결과를 공백으로 연결하여 하나의 문자열로 
+
+    tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='',
+                                                     num_words=vocab_size)
+    # keras의 Tokenizer 클래스를 사용하여 단어 토큰화 수행
+    # 'num_words'는 토큰화 과정에서 사용할 최대 단어의 개수 설정
+
+    tokenizer.fit_on_texts(morph)
+    # 토큰화 해야하는 문장에 대해 Tokenizer 객체를 학습
+
+    tensor = tokenizer.texts_to_sequences(morph)
+    # Tokenizer의 'text_to_sequeces' 메소드를 사용하여 각 문장을 정수 시퀀스로 변환
+    
+    tensor = tf.keras.preprocessing.sequence.pad_sequences(tensor, padding='post')
+    # 'ped_sequences' 메소드를 사용하여 각 시퀀스(문장)의 길이를 동일하게 맞춰줌.
+    # padding = 'post'는 패딩을 시퀀스 뒤쪽에 추가
+
+        
+    return tensor, tokenizer, morph
+    # 변환된 텐서, 토큰화에 사용된 tokenizer, 형태소 분석 결과 반환
+```
+간결하게 작성되어 있습니다.
 # 예시
 
 
